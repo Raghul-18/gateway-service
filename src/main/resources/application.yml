@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+    username: RAGHUL
+    password: 6379362346
+    driver-class-name: oracle.jdbc.OracleDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    out-of-order: true
+
+jwt:
+  secret: bXlfc3VwZXJfc2VjdXJlX3Rlc3Rfa2V5XzEyMzQ1Njc4OTA=  # Base64 of 32-byte key
+  expiration-ms: 3600000
+
+otp:
+  provider: 2factor
+  base-url: https://2factor.in/API/V1
+  api-key: 4b1e1a26-7280-11f0-a562-0200cd936042
