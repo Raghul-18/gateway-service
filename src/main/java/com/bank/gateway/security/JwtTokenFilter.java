@@ -1,13 +1,13 @@
 package com.bank.gateway.security;
 
 import com.bank.gateway.entity.User;
-import io.jsonwebtoken.JwtException;
-import jakarta.servlet.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -34,19 +34,26 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             String jwt = authHeader.substring(7);
 
             try {
+                // ✅ Validate the token
                 if (jwtUtils.validateToken(jwt)) {
                     User user = jwtUtils.extractUserFromToken(jwt);
 
+                    // ✅ Set user authentication with role
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    user, null, List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+                                    user,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
                             );
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
-            } catch (JwtException e) {
+
+            } catch (Exception e) {
+                // ❌ Token invalid — return 401 with message
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Invalid token: " + e.getMessage());
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"Invalid token: " + e.getMessage() + "\"}");
                 return;
             }
         }

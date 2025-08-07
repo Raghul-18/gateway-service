@@ -6,3 +6,14 @@ CREATE TABLE users (
                        enabled NUMBER(1) DEFAULT 1 NOT NULL,
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- V2__insert_admin_user.sql
+
+INSERT INTO users (username, role, password_hash, enabled, created_at)
+VALUES (
+           'admin',
+           'ADMIN',
+           '$2a$10$egLPrqZuc3gwk387j3tgCe3jaLYGJbyL50mYnOUNHW7DJbgIL3mVG', -- password: admin123
+           1,
+           CURRENT_TIMESTAMP
+       );

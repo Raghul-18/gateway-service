@@ -51,7 +51,6 @@ public class AuthServiceImpl implements AuthService {
                 .token(jwtUtils.generateToken(user))
                 .build();
     }
-
     @Override
     public JwtResponse loginAdmin(AdminLoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
@@ -63,12 +62,12 @@ public class AuthServiceImpl implements AuthService {
         boolean matches = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
         System.out.println(">> [DEBUG] Matches: " + matches);
 
-        if (!"ADMIN".equalsIgnoreCase(user.getRole()) || !user.isEnabled()) {
-            throw new CustomAuthException("Access denied");
-        }
-
         if (!matches) {
             throw new CustomAuthException("Invalid username or password");
+        }
+
+        if (!"ADMIN".equalsIgnoreCase(user.getRole()) || !user.isEnabled()) {
+            throw new CustomAuthException("Access denied");
         }
 
         return JwtResponse.builder()
@@ -77,6 +76,7 @@ public class AuthServiceImpl implements AuthService {
                 .token(jwtUtils.generateToken(user))
                 .build();
     }
+
 
 
     @Override

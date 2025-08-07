@@ -28,14 +28,20 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers(
                                 "/api/auth/send-otp",
                                 "/api/auth/verify-otp",
                                 "/api/auth/admin-login"
                         ).permitAll()
 
+                        // Allow internal APIs temporarily (for development or inter-service calls)
+                        .requestMatchers("/api/users/**").permitAll()
+
+                        // Token refresh requires authentication
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").authenticated()
 
+                        // Deny all others
                         .anyRequest().denyAll()
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
