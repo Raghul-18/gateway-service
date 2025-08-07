@@ -1,0 +1,231 @@
+{
+  "info": {
+    "name": "Gateway Service - Full API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "gateway-service-api-collection"
+  },
+  "item": [
+    {
+      "name": "Auth - Send OTP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/auth/send-otp",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "send-otp"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Verify OTP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/auth/verify-otp",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "verify-otp"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/auth/admin-login",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "admin-login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer <your_token>"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/auth/refresh",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "refresh"
+          ]
+        }
+      }
+    },
+    {
+      "name": "User - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/users/create",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "users",
+            "create"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"customer_123456789012\",\n  \"role\": \"CUSTOMER\",\n  \"enabled\": true\n}"
+        }
+      }
+    },
+    {
+      "name": "User - Update Status",
+      "request": {
+        "method": "PUT",
+        "url": {
+          "raw": "http://localhost:8080/api/users/1/status?enabled=false",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "users",
+            "1",
+            "status"
+          ],
+          "query": [
+            {
+              "key": "enabled",
+              "value": "false"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    },
+    {
+      "name": "User - Get by ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/users/1",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "users",
+            "1"
+          ]
+        }
+      }
+    },
+    {
+      "name": "User - Get by Username",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/users/by-username?username=customer_123456789012",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "users",
+            "by-username"
+          ],
+          "query": [
+            {
+              "key": "username",
+              "value": "customer_123456789012"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "User - Delete by ID",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "http://localhost:8080/api/users/1",
+          "host": [
+            "localhost:8080"
+          ],
+          "path": [
+            "api",
+            "users",
+            "1"
+          ]
+        }
+      }
+    }
+  ]
+}
