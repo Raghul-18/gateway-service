@@ -49,6 +49,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/admin/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/api/kyc-documents/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").authenticated()
 
 

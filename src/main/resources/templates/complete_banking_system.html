@@ -387,6 +387,34 @@
                 height: 40px;
                 font-size: 1.2rem;
             }
+
+            .document-status-card {
+                transition: all 0.3s ease;
+            }
+
+            .document-status-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+
+            .status-verified::after {
+                content: '✓';
+                margin-left: 0.25rem;
+            }
+
+            .status-rejected::after {
+                content: '✗';
+                margin-left: 0.25rem;
+            }
+
+            .status-pending::after {
+                content: '⏳';
+                margin-left: 0.25rem;
+            }
+
+            .kyc-document-admin {
+                background: #f8f9fa;
+            }
         }
     </style>
 </head>
@@ -753,7 +781,8 @@
     // API Base URLs
     const API_BASE = {
         gateway: 'http://localhost:8080/api',
-        customer: 'http://localhost:8081/api/customers'
+        customer: 'http://localhost:8081/api/customers',
+        kyc: 'http://localhost:8080/api/kyc-documents'
     };
 
     // Initialize app
@@ -870,7 +899,7 @@
             if (response.ok) {
                 otpSessionId = data.sessionId;
                 currentMobile = mobile;
-                showAlert('loginSuccess', 'OTP sent successfully! For demo, use 123456');
+                showAlert('loginSuccess', 'OTP sent successfully!');
                 showOtpVerification();
             } else {
                 showAlert('loginError', data.error?.message || 'Failed to send OTP');
@@ -1235,32 +1264,282 @@
         showKycReviewPage();
     }
 
+    //KYC Upload
+    // Submit all documents to backend KYC API
+    // Submit all KYC documents to backend
     async function submitKycDocuments() {
         const submitBtn = document.getElementById('submitKycBtn');
         setLoadingState(submitBtn, true);
+        hideAlert('kycError');
 
         try {
-            // For demo purposes, we'll simulate successful submission
-            // In a real implementation, you would upload files to a file service
-            // and then call your KYC service to update the status
+            const requiredDocs = ['aadhaar', 'pan', 'photo'];
+            const allUploaded = requiredDocs.every(doc => uploadedDocuments[doc]);
 
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate upload time
+            if (!allUploaded) {
+                showAlert('kycError', 'Please upload all required documents');
+                return;
+            }
 
-            showAlert('kycSuccess', 'Documents submitted successfully! Your application will be reviewed within 24-48 hours.');
+            console.log("📤 Starting KYC document submission...");
+
+            for (const docType of requiredDocs) {
+                const doc = uploadedDocuments[docType];
+                console.log(`➡ Uploading ${docType} (${doc.name}, ${formatFileSize(doc.size)})...`);
+                await uploadDocumentToServer(docType, doc);
+                console.log(`✅ ${docType} uploaded successfully`);
+            }
+
+            showAlert('kycSuccess', 'All documents submitted successfully! Your application will be reviewed within 24-48 hours.');
+
+            // Clear uploaded docs from memory
+            uploadedDocuments = {};
 
             setTimeout(() => {
+                console.log("🔄 Reloading customer status...");
                 showCustomerDashboard();
                 loadCustomerStatus();
             }, 2000);
 
         } catch (error) {
-            console.error('Error submitting KYC documents:', error);
-            showAlert('kycError', 'Failed to submit documents. Please try again.');
+            console.error('❌ Error submitting KYC documents:', error);
+            showAlert('kycError', error.message || 'Failed to submit documents. Please try again.');
         } finally {
             setLoadingState(submitBtn, false);
         }
     }
 
+    // Upload a single file using FormData to KYC API
+    async function uploadDocumentToServer(documentType, documentData) {
+        if (!documentData.file) {
+            throw new Error(`No file selected for ${documentType}`);
+        }
+
+        const formData = new FormData();
+        formData.append('file', documentData.file);
+        formData.append('documentType', documentType.toUpperCase());
+        formData.append('customerId', currentCustomerId);
+
+        const uploadUrl = `${API_BASE.kyc}/upload`;
+        console.log(`🌐 Sending POST ${uploadUrl}`);
+
+        const response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: formData
+        });
+
+        console.log(`📡 Response status for ${documentType}: ${response.status}`);
+
+        if (!response.ok) {
+            let errorMessage = 'Upload failed';
+            try {
+                const errorJson = await response.json();
+                errorMessage = errorJson.error || errorJson.message || errorMessage;
+            } catch (_) {
+                // Ignore JSON parse error
+            }
+            throw new Error(`${documentType} upload failed: ${errorMessage}`);
+        }
+
+        return await response.json();
+    }
+
+
+
+    // Update the file upload handler to ensure we store both file and base64
+    function handleFileUpload(input, docType) {
+        const file = input.files[0];
+        if (!file) return;
+
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+            showAlert('kycError', 'File size should not exceed 5MB');
+            input.value = '';
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = docType === 'photo'
+            ? ['image/jpeg', 'image/jpg', 'image/png']
+            : ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+
+        if (!allowedTypes.includes(file.type)) {
+            showAlert('kycError', 'Invalid file type. Please upload JPG, PNG or PDF files only.');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Store both the original file and base64 for flexibility
+            uploadedDocuments[docType] = {
+                file: file,  // Original file for direct upload
+                base64: e.target.result,  // Base64 for preview and fallback
+                name: file.name,
+                size: file.size,
+                type: file.type
+            };
+
+            updateDocumentDisplay(docType, file, e.target.result);
+            checkAllDocumentsUploaded();
+            hideAlert('kycError');
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+    // Update customer status loading to show uploaded documents
+    async function loadCustomerStatus() {
+        if (!currentCustomerId) return;
+
+        try {
+            // Load customer status from customer service
+            const response = await fetch(`${API_BASE.customer}/${currentCustomerId}/status`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (response.ok) {
+                const customer = await response.json();
+                updateKycStatusDisplay(customer.kycStatus);
+            }
+
+            // Also load uploaded documents from KYC service
+            await loadUploadedDocuments();
+
+        } catch (error) {
+            console.error('Error loading customer status:', error);
+        }
+    }
+
+    async function loadUploadedDocuments() {
+        try {
+            const response = await fetch('/api/kyc-documents/my-documents', {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (response.ok) {
+                const documents = await response.json();
+                updateDocumentStatusDisplay(documents);
+            }
+        } catch (error) {
+            console.error('Error loading uploaded documents:', error);
+        }
+    }
+
+    function updateDocumentStatusDisplay(documents) {
+        // Clear any existing status displays
+        const statusContainer = document.getElementById('documentStatusContainer');
+        if (!statusContainer) {
+            // Create a status container if it doesn't exist
+            const dashboardContent = document.querySelector('#customerDashboard .page-content');
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'documentStatusContainer';
+            statusDiv.innerHTML = '<h3>Uploaded Documents Status</h3>';
+            dashboardContent.appendChild(statusDiv);
+        }
+
+        // Group documents by type for easy access
+        const docsByType = {};
+        documents.forEach(doc => {
+            docsByType[doc.documentName] = doc;
+        });
+
+        // Required document types
+        const requiredTypes = {
+            'AADHAR': 'Aadhaar Card',
+            'PAN': 'PAN Card', 
+            'PHOTO': 'Photograph'
+        };
+
+        let statusHTML = '<div class="documents-status" style="margin-top: 1rem;">';
+        
+        Object.entries(requiredTypes).forEach(([type, displayName]) => {
+            const doc = docsByType[type];
+            let statusClass = 'status-pending';
+            let statusText = 'Not Uploaded';
+            
+            if (doc) {
+                switch (doc.status) {
+                    case 'VERIFIED':
+                        statusClass = 'status-verified';
+                        statusText = 'Verified';
+                        break;
+                    case 'REJECTED':
+                        statusClass = 'status-rejected';
+                        statusText = 'Rejected';
+                        break;
+                    case 'PENDING':
+                        statusClass = 'status-pending';
+                        statusText = 'Under Review';
+                        break;
+                }
+            }
+            
+            statusHTML += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee;">
+                    <span>${displayName}</span>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+            `;
+        });
+        
+        statusHTML += '</div>';
+        
+        const statusContainer2 = document.getElementById('documentStatusContainer');
+        if (statusContainer2) {
+            statusContainer2.innerHTML = '<h3>Uploaded Documents Status</h3>' + statusHTML;
+        }
+    }
+
+    // Function to download a document (for viewing uploaded documents)
+    async function downloadDocument(documentId) {
+        try {
+            const response = await fetch(`/api/kyc-documents/document/${documentId}/download`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `document_${documentId}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                console.error('Failed to download document');
+            }
+        } catch (error) {
+            console.error('Error downloading document:', error);
+        }
+    }
+
+    // Update the checkAllDocumentsUploaded function
+    function checkAllDocumentsUploaded() {
+        const requiredDocs = ['aadhaar', 'pan', 'photo'];
+        const allUploaded = requiredDocs.every(doc => uploadedDocuments[doc]);
+
+        const reviewBtn = document.getElementById('reviewBtn');
+        if (reviewBtn) {
+            reviewBtn.disabled = !allUploaded;
+        }
+
+        if (allUploaded) {
+            showAlert('kycSuccess', 'All documents ready for upload!');
+        }
+    }
     // Admin Dashboard Functions
     async function showAdminDashboard() {
         showPage('adminDashboard');

@@ -50,3 +50,9 @@ otp:
   provider: 2factor
   base-url: https://2factor.in/API/V1
   api-key: 4b1e1a26-7280-11f0-a562-0200cd936042
+
+services:
+  kyc:
+    base-url: http://localhost:8084
+  customer:
+    base-url: http://localhost:8081
