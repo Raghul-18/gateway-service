@@ -1454,17 +1454,19 @@
         // Required document types
         const requiredTypes = {
             'AADHAR': 'Aadhaar Card',
-            'PAN': 'PAN Card', 
+            'PAN': 'PAN Card',
             'PHOTO': 'Photograph'
         };
 
         let statusHTML = '<div class="documents-status" style="margin-top: 1rem;">';
-        
+
         Object.entries(requiredTypes).forEach(([type, displayName]) => {
             const doc = docsByType[type];
             let statusClass = 'status-pending';
             let statusText = 'Not Uploaded';
-            
+            let verifiedBy = '';
+            let message = '';
+
             if (doc) {
                 switch (doc.status) {
                     case 'VERIFIED':
@@ -1480,18 +1482,28 @@
                         statusText = 'Under Review';
                         break;
                 }
+                verifiedBy = doc.verifiedBy || '';
+                message = doc.message || '';
             }
-            
+
             statusHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee;">
-                    <span>${displayName}</span>
-                    <span class="status-badge ${statusClass}">${statusText}</span>
+                <div style="display: flex; flex-direction: column; padding: 1rem 0; border-bottom: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600;">${displayName}</span>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    ${verifiedBy ? `<div style="font-size: 0.9rem; color: #666; margin-bottom: 0.25rem;">
+                        <strong>Verified by:</strong> ${verifiedBy}
+                    </div>` : ''}
+                    ${message ? `<div style="font-size: 0.9rem; color: #666;">
+                        <strong>Message:</strong> ${message}
+                    </div>` : ''}
                 </div>
             `;
         });
-        
+
         statusHTML += '</div>';
-        
+
         const statusContainer2 = document.getElementById('documentStatusContainer');
         if (statusContainer2) {
             statusContainer2.innerHTML = '<h3>Uploaded Documents Status</h3>' + statusHTML;
