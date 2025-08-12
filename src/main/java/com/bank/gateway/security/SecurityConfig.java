@@ -34,6 +34,19 @@ public class SecurityConfig {
                                 "/api/auth/verify-otp",
                                 "/api/auth/admin-login"
                         ).permitAll()
+                        .requestMatchers(
+                                "/",
+                                "/login",
+                                "/dashboard",
+                                "/admin",
+                                "/registration",
+                                "/kyc",
+                                "/static/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico"
+                        ).permitAll()
                         .requestMatchers("/admin/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").authenticated()

@@ -16,6 +16,9 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")  // Allow all paths
                         .allowedOrigins("http://localhost:8084") // UI origin
+                        .allowedOrigins("http://localhost:8081")
+                        .allowedOrigins("http://localhost:8082")
+                        .allowedOrigins("http://localhost:8083")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true); // Needed if sending cookies or Authorization headers
