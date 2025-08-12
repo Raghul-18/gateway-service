@@ -1090,24 +1090,64 @@
     }
 
     // Customer Dashboard Functions
-    async function loadCustomerStatus() {
-        if (!currentCustomerId) return;
 
-        try {
-            const response = await fetch(`${API_BASE.customer}/${currentCustomerId}/status`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
+    document.addEventListener('DOMContentLoaded', function() {
+    checkExistingAuth();
+    setupEventListeners();
+
+    // Account type radio change listener
+    document.querySelectorAll('input[name="accountTypeSelect"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+                    loadAccountDetails(this.value);
+                });
             });
+        });
 
-            if (response.ok) {
-                const customer = await response.json();
-                updateKycStatusDisplay(customer.kycStatus);
+        async function loadCustomerStatus() {
+            if (!currentCustomerId) return;
+
+            try {
+                const response = await fetch(`${API_BASE.customer}/${currentCustomerId}/status`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const customer = await response.json();
+                    updateKycStatusDisplay(customer.kycStatus);
+                }
+
+                // Load the default account type (Savings)
+                await loadAccountDetails('SAVINGS');
+                await loadUploadedDocuments();
+
+            } catch (error) {
+                console.error('Error loading customer status:', error);
             }
-        } catch (error) {
-            console.error('Error loading customer status:', error);
         }
-    }
+
+        async function loadAccountDetails(accountType) {
+            try {
+                const response = await fetch(`http://localhost:8083/api/accounts/my-accounts/${accountType}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const account = await response.json();
+                    document.getElementById('accNumber').textContent = account.accountNumber || '-';
+                    document.getElementById('accType').textContent = account.accountType || '-';
+                    document.getElementById('accBalance').textContent = account.formattedBalance || '-';
+                } else {
+                    console.error(`Failed to load ${accountType} account details`);
+                }
+            } catch (error) {
+                console.error('Error fetching account details:', error);
+            }
+        }
+
 
     function updateKycStatusDisplay(status) {
         const statusText = document.getElementById('kycStatusText');
