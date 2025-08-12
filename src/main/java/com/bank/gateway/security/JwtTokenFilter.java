@@ -3,6 +3,7 @@ package com.bank.gateway.security;
 import com.bank.gateway.entity.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -28,17 +29,26 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String jwt = null;
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String jwt = authHeader.substring(7);
+            jwt = authHeader.substring(7);
+        } else if (request.getCookies() != null) {
+            // Check cookies for "token"
+            for (Cookie cookie : request.getCookies()) {
+                if ("token".equals(cookie.getName())) {
+                    jwt = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
+        if (jwt != null) {
             try {
-                // ✅ Validate the token
                 if (jwtUtils.validateToken(jwt)) {
                     User user = jwtUtils.extractUserFromToken(jwt);
 
-                    // ✅ Set user authentication with role
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     user,
@@ -48,9 +58,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
-
             } catch (Exception e) {
-                // ❌ Token invalid — return 401 with message
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write("{\"error\": \"Invalid token: " + e.getMessage() + "\"}");
