@@ -47,11 +47,21 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/favicon.ico"
                         ).permitAll()
+
+                        // Swagger/OpenAPI endpoints
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/admin/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/kyc-documents/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").authenticated()
-
 
                         // Allow internal APIs temporarily (for development or inter-service calls)
                         .requestMatchers("/api/users/**").permitAll()

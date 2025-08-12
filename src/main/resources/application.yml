@@ -46,6 +46,21 @@ jwt:
   secret: bXlfc3VwZXJfc2VjdXJlX3Rlc3Rfa2V5XzEyMzQ1Njc4OTA=  # Base64 of 32-byte key
   expiration-ms: 3600000
 
+# Swagger/OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+    filter: true
+    syntaxHighlight:
+      activate: true
+      theme: monokai
+    oauth2RedirectUrl: /swagger-ui/oauth2-redirect.html
+
 otp:
   provider: 2factor
   base-url: https://2factor.in/API/V1
